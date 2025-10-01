@@ -1,15 +1,28 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
 import Note from './components/Note'
 import Footer from './components/Footer'
 import Notification from './components/Notification'
+import Login from './components/Login'
 import noteService from './services/notes'
+import loginService from './services/login'
 
 const App = () => {
   const [notes, setNotes] = useState([])
   const [newNote, setNewNote] = useState('')
   const [showAll, setShowAll] = useState(true)
   const [errorMessage, setErrorMessage] = useState(null)
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    const loggedUserJSON = window.localStorage.getItem('loggedNoteappUser')
+    if (loggedUserJSON) {
+      const user = JSON.parse(loggedUserJSON)
+      setUser(user)
+      noteService.setToken(user.token)
+    }
+  }, [])
 
   useEffect(() => {
     noteService.getAll()
@@ -17,6 +30,26 @@ const App = () => {
         setNotes(initialNotes)
       })
   }, [])
+
+  const handleLogin = async event => {
+    event.preventDefault()
+    
+    try {
+      const user = await loginService.login({ username, password })
+
+      window.localStorage.setItem('loggedNoteappUser', JSON.stringify(user))
+      noteService.setToken(user.token)
+      
+      setUser(user)
+      setUsername('')
+      setPassword('')
+    } catch {
+      setErrorMessage('wrong credentials')
+      setTimeout(() => {
+        setErrorMessage(null)
+      }, 5000)
+    }
+  }
   
   const addNote = event => {
     event.preventDefault()
@@ -43,7 +76,7 @@ const App = () => {
       .update(id, changedNote).then(returnedNote => {
         setNotes(notes.map(note => note.id !== id ? note : returnedNote))
       })
-      .catch(error => {
+      .catch(() => {
 
         setErrorMessage(
           `Note '${note.content}' was already removed from server`
@@ -57,10 +90,33 @@ const App = () => {
 
   const notesToShow = showAll ? notes : notes.filter(note => note.important)
 
+  
+
+  const noteForm = () => (
+    <form onSubmit={addNote}>
+      <input value={newNote} onChange={handleNoteChange} />
+      <button type="submit">save</button>
+    </form>
+  )
+
   return (
     <div>
       <h1>Notes</h1>
       <Notification message={errorMessage} />
+
+      {!user && <Login 
+                handleLogin={handleLogin}
+                username={username}
+                setUsername={setUsername}
+                password={password}
+                setPassword={setPassword} />}
+      {user && (
+        <div>
+          <p>{user.name} logged in</p>
+          {noteForm()}
+        </div>
+      )}
+
       <div>
         <button onClick={() => setShowAll(!showAll)}>
           show {showAll ? 'important' : 'all' }
@@ -71,11 +127,6 @@ const App = () => {
           <Note key={note.id} note={note} toggleImportance={() => toggleImportanceOf(note.id)} />
         )}
       </ul>
-      <form onSubmit={addNote}>
-
-        <input value={newNote} onChange={handleNoteChange} />
-        <button type="submit">save</button>
-      </form>   
       <Footer />
     </div>
   )
