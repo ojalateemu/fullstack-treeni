@@ -4,7 +4,7 @@ const userSchema = mongoose.Schema({
   username: {
     type: String,
     required: true,
-    unique: true // username oltava yksikäsitteinen
+    unique: true
   },
   name: String,
   passwordHash: String,
@@ -13,7 +13,7 @@ const userSchema = mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Note'
     }
-  ],
+  ]
 })
 
 userSchema.set('toJSON', {
