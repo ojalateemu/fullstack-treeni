@@ -1,6 +1,5 @@
 const { test, describe, expect, beforeEach } = require('@playwright/test')
 const { loginWith, createNote } = require('./helper')
-const { create } = require('domain')
 
 describe('Note app', () => {
   beforeEach(async ({ page, request }) => {
